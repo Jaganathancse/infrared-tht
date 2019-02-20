@@ -1,0 +1,27 @@
+resource_registry:
+  OS::TripleO::ComputeSriov::Net::SoftwareConfig: nic-configs/compute-sriov.yaml
+  OS::TripleO::Compute::Net::SoftwareConfig: nic-configs/compute.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig: nic-configs/controller.yaml
+
+parameter_defaults:
+  DnsServers: ['10.11.5.19']
+
+  ControlPlaneDefaultRoute: "192.168.10.1"
+  ControlPlaneSubnetCidr: "24"
+  EC2MetadataIp: "192.168.10.1"
+
+  ControlPlaneSubnet: leaf0
+  ControllerControlPlaneSubnet: leaf0
+  ComputeControlPlaneSubnet: leaf0
+  ComputeSriovControlPlaneSubnet: leaf0
+
+  NeutronExternalNetworkBridge: "br-ex"
+  NeutronTunnelTypes: 'vxlan'
+  NeutronNetworkType: 'vxlan'
+  NeutronBridgeMappings: 'datacentre:br-ex'
+  NeutronNetworkVLANRanges: 'tenant:221:226'
+  NeutronSriovNumVFs: "p5p2:5"
+  NeutronPhysicalDevMappings: "tenant:p5p2"
+  NovaPCIPassthrough:
+    - devname: "p5p2"
+      physical_network: "tenant"
