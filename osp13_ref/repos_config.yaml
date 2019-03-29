@@ -1,0 +1,11 @@
+---
+# Used during RealTime deployments in order to create additional necessary NFV repos
+# during invocation of tripleo-undercloud plugin
+extra_repos:
+  - name: RHEL_NFV
+    file: rhel76_nfv
+    description: RHEL NFV
+    baseurl: http://pulp.dist.prod.ext.phx2.redhat.com/content/dist/rhel/server/7/7.6/x86_64/nfv/os/
+    enabled: 1
+    gpgcheck: 0
+
