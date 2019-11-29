@@ -1,0 +1,68 @@
+{
+    "nodes": [
+    {
+    "arch": "x86_64",
+    "cpu": "40",
+    "disk": "100",
+    "mac": [
+        "80:18:44:ed:82:d9"
+    ],
+    "memory": "125000",
+    "name": "computeovsdpdksriov-0",
+    "pm_addr": "10.35.78.191",
+    "pm_password": "calvin",
+    "pm_type": "pxe_ipmitool",
+    "pm_user": "root"
+},
+    {
+    "arch": "x86_64",
+    "cpu": "40",
+    "disk": "100",
+    "mac": [
+        "80:18:44:ed:80:9d"
+    ],
+    "memory": "125000",
+    "name": "computeovsdpdksriov-1",
+    "pm_addr": "10.35.78.192",
+    "pm_password": "calvin",
+    "pm_type": "pxe_ipmitool",
+    "pm_user": "root"
+},
+    {
+      "name": "controller-0",
+      "mac": ["52:54:00:55:2b:2e"],
+      "cpu": "4",
+      "memory": "15360",
+      "disk": "40",
+            "arch": "x86_64",
+              "pm_addr": "172.16.0.1",
+        "pm_type": "ipmi",
+        "pm_user": "admin",
+        "pm_password": "password",
+        "pm_port": "6232"
+                },    {
+      "name": "controller-1",
+      "mac": ["52:54:00:b7:b3:cb"],
+      "cpu": "4",
+      "memory": "15360",
+      "disk": "40",
+            "arch": "x86_64",
+              "pm_addr": "172.16.0.1",
+        "pm_type": "ipmi",
+        "pm_user": "admin",
+        "pm_password": "password",
+        "pm_port": "6231"
+                },    {
+      "name": "controller-2",
+      "mac": ["52:54:00:e0:64:a3"],
+      "cpu": "4",
+      "memory": "15360",
+      "disk": "40",
+            "arch": "x86_64",
+              "pm_addr": "172.16.0.1",
+        "pm_type": "ipmi",
+        "pm_user": "admin",
+        "pm_password": "password",
+        "pm_port": "6230"
+                }    ]
+}

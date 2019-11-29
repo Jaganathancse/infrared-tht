@@ -1,0 +1,254 @@
+heat_template_version: queens
+
+description: 'Software Config to drive os-net-config to configure VLANs for the compute role.'
+parameters:
+  ControlPlaneIp:
+    default: ''
+    description: IP address/subnet on the ctlplane network
+    type: string
+  ExternalIpSubnet:
+    default: ''
+    description: IP address/subnet on the external network
+    type: string
+  InternalApiIpSubnet:
+    default: ''
+    description: IP address/subnet on the internal_api network
+    type: string
+  StorageIpSubnet:
+    default: ''
+    description: IP address/subnet on the storage_mgmt network
+    type: string
+  StorageMgmtIpSubnet:
+    default: ''
+    description: IP address/subnet on the storage_mgmt network
+    type: string
+  TenantIpSubnet:
+    default: ''
+    description: IP address/subnet on the tenant network
+    type: string
+  ManagementIpSubnet: # Only populated when including environments/network-management.yaml
+    default: ''
+    description: IP address/subnet on the management network
+    type: string
+  InternalApiNetworkVlanID:
+    default: ''
+    description: Vlan ID for the internal_api network traffic.
+    type: number
+  StorageNetworkVlanID:
+    default: ''
+    description: Vlan ID for the storage network traffic.
+    type: number
+  StorageMgmtNetworkVlanID:
+    default: ''
+    description: Vlan ID for the storage_mgmt network traffic.
+    type: number
+  TenantNetworkVlanID:
+    default: ''
+    description: Vlan ID for the tenant network traffic.
+    type: number
+  ControlPlaneSubnetCidr:
+    default: ''
+    description: >
+      The subnet CIDR of the control plane network. (The parameter is automatically resolved from the ctlplane subnet's cidr
+      attribute.)
+    type: string
+  ControlPlaneDefaultRoute:
+    default: ''
+    description: >-
+      The default route of the control plane network. (The parameter is automatically resolved from the ctlplane subnet's
+      gateway_ip attribute.)
+    type: string
+  DnsServers: # Override this via parameter_defaults
+    default: []
+    description: >
+      DNS servers to use for the Overcloud (2 max for some implementations). If not set the nameservers configured in the
+      ctlplane subnet's dns_nameservers attribute will be used.
+    type: comma_delimited_list
+  EC2MetadataIp:
+    default: ''
+    description: >-
+      The IP address of the EC2 metadata server. (The parameter is automatically resolved from the ctlplane subnet's host_routes
+      attribute.)
+    type: string
+
+resources:
+  OsNetConfigImpl:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config:
+        str_replace:
+          template:
+            get_file: /usr/share/openstack-tripleo-heat-templates/network/scripts/run-os-net-config.sh
+          params:
+            $network_config:
+              network_config:
+              - type: interface
+                name: nic1
+                use_dhcp: false
+                defroute: false
+
+              - type: interface
+                name: nic2
+                use_dhcp: false
+                dns_servers:
+                  get_param: DnsServers
+                addresses:
+                - ip_netmask:
+                    list_join:
+                    - /
+                    - - get_param: ControlPlaneIp
+                      - get_param: ControlPlaneSubnetCidr
+                routes:
+                - ip_netmask: 169.254.169.254/32
+                  next_hop:
+                    get_param: EC2MetadataIp
+                - default: true
+                  next_hop:
+                    get_param: ControlPlaneDefaultRoute
+
+              - type: interface
+                name: nic3
+                use_dhcp: false
+                defroute: false
+
+              - type: interface
+                name: nic4
+                use_dhcp: false
+                defroute: false
+
+              - type: sriov_pf
+                name: nic7
+                mtu: 9000
+                numvfs: 14
+                use_dhcp: false
+                defroute: false
+                nm_controlled: true
+                hotplug: true
+                promisc: false
+
+              - type: sriov_pf
+                name: nic8
+                mtu: 9000
+                numvfs: 14
+                use_dhcp: false
+                defroute: false
+                nm_controlled: true
+                hotplug: true
+                promisc: false
+
+              - type: linux_bond
+                name: internal_bond
+                bonding_options: mode=active-backup
+                use_dhcp: false
+                members:
+                - type: sriov_vf
+                  device: nic7
+                  vfid: 1
+                - type: sriov_vf
+                  device: nic8
+                  vfid: 1
+
+              - type: linux_bond
+                name: storage_bond
+                bonding_options: mode=active-backup
+                use_dhcp: false
+                members:
+                - type: sriov_vf
+                  device: nic7
+                  vfid: 2
+                - type: sriov_vf
+                  device: nic8
+                  vfid: 2
+
+              - type: linux_bond
+                name: stmgmt_bond
+                bonding_options: mode=active-backup
+                use_dhcp: false
+                members:
+                - type: sriov_vf
+                  device: nic7
+                  vfid: 0
+                - type: sriov_vf
+                  device: nic8
+                  vfid: 0
+
+              - type: vlan
+                vlan_id:
+                  get_param: InternalApiNetworkVlanID
+                device: internal_bond
+                addresses:
+                - ip_netmask:
+                    get_param: InternalApiIpSubnet
+
+              - type: vlan
+                vlan_id:
+                  get_param: StorageNetworkVlanID
+                device: storage_bond
+                addresses:
+                - ip_netmask:
+                    get_param: StorageIpSubnet
+
+              - type: vlan
+                vlan_id:
+                  get_param: StorageMgmtNetworkVlanID
+                device: stmgmt_bond
+                addresses:
+                - ip_netmask:
+                    get_param: StorageMgmtIpSubnet
+
+              - type: ovs_user_bridge
+                name: br-link0
+                use_dhcp: false
+                ovs_extra:
+                  - str_replace:
+                      template: set port br-link0 tag=_VLAN_TAG_
+                      params:
+                        _VLAN_TAG_:
+                          get_param: TenantNetworkVlanID
+                addresses:
+                  - ip_netmask:
+                      get_param: TenantIpSubnet
+                members:
+                  - type: ovs_dpdk_bond
+                    name: dpdkbond0
+                    mtu: 9000
+                    rx_queue: 2
+                    members:
+                      - type: ovs_dpdk_port
+                        name: dpdk0
+                        members:
+                          - type: sriov_vf
+                            device: nic8
+                            vfid: 3
+                      - type: ovs_dpdk_port
+                        name: dpdk1
+                        members:
+                          - type: sriov_vf
+                            device: nic7
+                            vfid: 3
+
+              - type: sriov_pf
+                name: nic9
+                mtu: 9000
+                numvfs: 10
+                use_dhcp: false
+                defroute: false
+                nm_controlled: true
+                hotplug: true
+                promisc: false
+
+              - type: sriov_pf
+                name: nic10
+                mtu: 9000
+                numvfs: 10
+                use_dhcp: false
+                defroute: false
+                nm_controlled: true
+                hotplug: true
+                promisc: false
+outputs:
+  OS::stack_id:
+    description: The OsNetConfigImpl resource.
+    value:
+      get_resource: OsNetConfigImpl

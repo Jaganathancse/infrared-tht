@@ -1,0 +1,102 @@
+resource_registry:
+  # Specify the relative/absolute path to the config files you want to use for override the default.
+  OS::TripleO::ComputeHCIOvsDpdk::Net::SoftwareConfig: nic-configs/computehciovsdpdk.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig: nic-configs/controller.yaml
+
+parameter_defaults:
+  # Gateway router for the provisioning network (or Undercloud IP)
+  ControlPlaneDefaultRoute: 192.0.60.1
+  # Generally the IP of the Undercloud
+  EC2MetadataIp: 192.0.60.1
+  # Define the DNS servers (maximum 2) for the overcloud nodes
+  DnsServers: ["10.46.0.31","10.46.0.32"]
+  # May set to br-ex if using floating IPs only on native VLAN on bridge br-ex
+  NeutronExternalNetworkBridge: "''"
+  # The tunnel type for the tenant network (vxlan or gre). Set to '' to disable tunneling.
+  NeutronTunnelTypes: 'vxlan'
+  # The tenant network type for Neutron (vlan or vxlan).
+  NeutronNetworkType: 'vxlan'
+  # The OVS logical->physical bridge mappings to use.
+  NeutronBridgeMappings: 'dpdk-mgmt:br-link0'
+  # The Neutron ML2 and OpenVSwitch vlan mapping range to support.
+  NeutronNetworkVLANRanges: 'dpdk-mgmt:405:405,dpdk-mgmt:516:519,sriov-1:600:600,sriov-2:601:601,sriov-partitioned-1:516:519,sriov-partitioned-2:516:519'
+  # Nova flavor to use.
+  OvercloudControllerFlavor: controller
+  OvercloudComputeHCIOvsDpdkFlavor: computeosd
+  #Number of nodes to deploy.
+  ControllerCount: 1
+  ComputeHCIOvsDpdkCount: 1
+  # NTP server configuration.
+  NtpServer: clock.redhat.com
+  # MTU global configuration
+  NeutronGlobalPhysnetMtu: 9000
+  # Configure the classname of the firewall driver to use for implementing security groups.
+  NeutronOVSFirewallDriver: openvswitch
+  SshServerOptions:
+    UseDns: 'no'
+  # Enable log level DEBUG for supported components
+  Debug: True
+
+  ControllerHostnameFormat: 'controller-%index%'
+  ControllerSchedulerHints:
+    'capabilities:node': 'controller-%index%'
+  ComputeHCIOvsDpdkHostnameFormat: 'computehciovsdpdk-%index%'
+  ComputeHCIOvsDpdkSchedulerHints:
+    'capabilities:node': 'computehciovsdpdk-%index%'
+  HostnameMap:
+    controller-0: controller-0
+    computehciovsdpdk-0: computehciovsdpdk-0
+
+  ##########################
+  # OVS DPDK configuration #
+  ##########################
+  ComputeHCIOvsDpdkParameters:
+    KernelArgs: "default_hugepagesz=1GB hugepagesz=1G hugepages=64 iommu=pt intel_iommu=on isolcpus=2-19,22-39"
+    TunedProfileName: "cpu-partitioning"
+    IsolCpusList: "2-19,22-39"
+    NovaVcpuPinSet: ['4,24,6,26,8,28,10,30,12,32,14,34,16,36,18,38']
+    NovaReservedHostMemory: 20480
+    OvsDpdkSocketMemory: "3072,1024"
+    OvsDpdkMemoryChannels: "4"
+    OvsDpdkCoreList: "0,20,1,21"
+    NovaComputeCpuSharedSet: [0,20,1,21]
+    OvsPmdCoreList: "2,22,3,23"
+
+  ##########################
+  #  SR-IOV configuration  #
+  ##########################
+  NeutronMechanismDrivers: ['openvswitch','sriovnicswitch']
+  NovaPCIPassthrough:                                                           
+    - devname: "p7p3"                                                           
+      trusted: "true"                                                           
+      physical_network: "sriov-1"                                               
+    - devname: "p7p4"                                                           
+      trusted: "true"                                                           
+      physical_network: "sriov-2"                                               
+    - address: {"domain": ".*", "bus": "05", "slot": "02", "function": "[4-9]"} 
+      trusted: "true"                                                           
+      physical_network: "sriov-partitioned-1"                                   
+    - address: {"domain": ".*", "bus": "05", "slot": "06", "function": "[4-9]"} 
+      trusted: "true"                                                           
+      physical_network: "sriov-partitioned-2"   
+
+  NeutronPhysicalDevMappings: "sriov-1:p7p3,sriov-2:p7p4,sriov-partitioned-1:p7p1,sriov-partitioned-2:p7p2"
+
+  ############################
+  #  Scheduler configuration #
+  ############################
+  NovaSchedulerAvailableFilters:
+    - "nova.scheduler.filters.all_filters"
+    - "nova.scheduler.filters.pci_passthrough_filter.PciPassthroughFilter"
+  NovaSchedulerDefaultFilters:
+    - "RetryFilter"
+    - "AvailabilityZoneFilter"
+    - "RamFilter"
+    - "ComputeFilter"
+    - "ComputeCapabilitiesFilter"
+    - "ImagePropertiesFilter"
+    - "ServerGroupAntiAffinityFilter"
+    - "ServerGroupAffinityFilter"
+    - "PciPassthroughFilter"
+    - "NUMATopologyFilter"
+    - "AggregateInstanceExtraSpecsFilter"
