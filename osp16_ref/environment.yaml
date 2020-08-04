@@ -1,0 +1,18 @@
+parameter_defaults:
+  OvercloudControllerFlavor: "controller"
+  OvercloudComputeOvsDpdkFlavor: "computeovsdpdk"
+  OvercloudComputeSriovFlavor: "computesriov"
+
+  ContainerOpenvswitchNetcontroldImage: "quay.io/netcontrold/netcontrold-py:1.0.16"
+
+  ControllerCount: 3
+  ComputeOvsDpdkCount: 1
+  ComputeSriovCount: 1
+
+  NtpServer: "clock.redhat.com"
+  #TimeZone: Kolkata
+  SshServerOptions:
+    UseDns: 'no'
+    #TenantInterfaceRoutes:
+    #  - test1: 1
+    #    test2: 2
