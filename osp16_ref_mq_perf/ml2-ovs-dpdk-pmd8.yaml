@@ -1,0 +1,22 @@
+
+parameter_defaults:
+  NumDpdkInterfaceRxQueues: 2
+  #NeutronGlobalPhysnetMtu: 2000
+
+  ComputeOvsDpdkParameters:
+    KernelArgs: "default_hugepagesz=1GB hugepagesz=1G hugepages=64 intel_iommu=on iommu=pt isolcpus=1-11,13-23"
+    IsolCpusList: "1-11,13-23"
+    OvsDpdkSocketMemory: "1024"
+    OvsDpdkMemoryChannels: "4"
+    NovaReservedHostMemory: 4096
+    OvsPmdCoreList: "6,7,9,11,18,19,21,23"
+    OvsDpdkCoreList: "9,21"
+    NovaComputeCpuDedicatedSet: ['1-5','8','10','13-17','20','22']
+    NovaComputeCpuSharedSet: ['0','12']
+
+  ComputeSriovParameters:
+    KernelArgs: "default_hugepagesz=1GB hugepagesz=1G hugepages=64 intel_iommu=on iommu=pt isolcpus=1-11,13-23"
+    IsolCpusList: "1-11,13-23"
+    NovaReservedHostMemory: 4096
+    NovaComputeCpuDedicatedSet: ['1-11','13-23']
+    NovaComputeCpuSharedSet: ['0','12']

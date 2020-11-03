@@ -1,0 +1,289 @@
+---
+
+# Tags
+setup_os_env: true
+user: true
+quota: true
+network: true
+net_port: true
+aggregate: true
+flavor: true
+image: true
+keypair: true
+security_group: true
+instance: true
+overcloud_delete: false
+resources_output: true
+
+#resource_state: present
+
+overcloud_name: overcloud
+cloud_name: overcloud
+
+dut_compute: overcloud-computeovsdpdk-0
+
+#multiqueue_set: False
+#trex_rate: 2
+#trex_platform:
+#  master_thread_id: 0
+#  latency_thread_id: 1
+#  dual_if:
+#    - socket: 0
+#      threads: [2, 3]
+
+#trex_lcores: '2,3'
+#testpmd_lcores: '1,2,3'
+#testpmd_forward_cores: 2
+
+
+#pmd_lb: ovs
+pmd_lb_pretest: True
+pmd_lb_pretest_sec: 180
+#multiqueue_set: False
+trex_set_vlan: True
+#trex_process_threads: 2
+trex_flows: 1
+#trex_rate: 2
+#trex_max_lost_pct: 50
+#trex_validation: 30
+#trex_search: 30
+#multiqueue_trex_platform:
+#  master_thread_id: 0
+#  latency_thread_id: 1
+#  dual_if:
+#    - socket: 0
+#      threads: [2, 3]
+
+#trex_lcores: '2,3'
+#testpmd_lcores: '1,2,3'
+#testpmd_forward_cores: 2
+forward_mode: 'mac'
+
+# User creation
+users:
+  - name: admin
+    pass: ptBVnUnHR8AMNsy7E6MmeT6VA
+    project: admin
+    domain: default
+    role: admin
+
+# Network creation
+networks:
+  - allocation_pool_end: 172.80.0.226
+    allocation_pool_start: 172.80.0.216
+    cidr: 172.80.0.0/24
+    enable_dhcp: true
+    external: true
+    gateway_ip: 172.80.0.1
+    name: datacentre
+    network_type: flat
+    physical_network: datacentre
+    port_type: normal
+    router_name: router
+    shared: true
+  - allocation_pool_end: 50.0.2.100
+    allocation_pool_start: 50.0.2.10
+    cidr: 50.0.2.0/24
+    enable_dhcp: true
+    external: false
+    gateway_ip: 50.0.2.254
+    ip_version: 4
+    mgmt: true
+    name: mgmt_dpdk1
+    network_type: vlan
+    physical_network: dpdk1
+    port_type: normal
+    router_name: router
+    sec_groups: true
+    segmentation_id: '207'
+    tag: external
+  - allocation_pool_end: 50.0.3.100
+    allocation_pool_start: 50.0.3.10
+    cidr: 50.0.3.0/24
+    enable_dhcp: true
+    external: false
+    gateway_ip: 50.0.3.254
+    ip_version: 4
+    mgmt: true
+    name: mgmt_vxlan
+    network_type: vxlan
+    port_type: normal
+    router_name: router
+    sec_groups: true
+    tag: external
+  - name: 'testpmd_net_nic0_308'
+    allocation_pool_end: 50.0.4.100
+    allocation_pool_start: 50.0.4.10
+    cidr: 50.0.4.0/24
+    enable_dhcp: false
+    ip_version: 4
+    network_type: vlan
+    no_gateway_ip: true
+    physical_network: dpdk1
+    port_type: normal
+    sec_groups: true
+    segmentation_id: '208'
+  - name: 'testpmd_net_nic1_309'
+    allocation_pool_end: 50.0.5.100
+    allocation_pool_start: 50.0.5.10
+    cidr: 50.0.5.0/24
+    enable_dhcp: false
+    ip_version: 4
+    network_type: vlan
+    no_gateway_ip: true
+    physical_network: dpdk2
+    port_type: normal
+    sec_groups: true
+    segmentation_id: '209'
+  - name: 'sriov_net_nic0_308'
+    allocation_pool_end: 50.0.4.100
+    allocation_pool_start: 50.0.4.10
+    cidr: 50.0.4.0/24
+    enable_dhcp: false
+    ip_version: 4
+    network_type: vlan
+    no_gateway_ip: true
+    physical_network: sriov1
+    port_type: direct-physical
+    segmentation_id: '208'
+  - name: 'sriov_net_nic1_309'
+    allocation_pool_end: 50.0.5.100
+    allocation_pool_start: 50.0.5.10
+    cidr: 50.0.5.0/24
+    enable_dhcp: false
+    ip_version: 4
+    network_type: vlan
+    no_gateway_ip: true
+    physical_network: sriov2
+    port_type: direct-physical
+    segmentation_id: '209'
+dns_nameservers:
+  - 10.46.0.31
+  - 8.8.8.8
+
+# Aggregate group creation
+aggregate_groups:
+  - name: trex
+    hosts:
+      - overcloud-computesriov-0.localdomain
+    metadata:
+      - flavor=trex
+
+  - name: dut
+    hosts:
+      - overcloud-computeovsdpdk-0.localdomain
+    metadata:
+      - flavor=dut
+
+
+images:
+  - name: image_no_mq
+    url: http://file.tlv.redhat.com/~vkhitrin/nfv_tuned_rhel76.qcow2
+    #url: file:///tmp/CentOS-7-x86_64-GenericCloud.qcow2
+    properties:
+      hw_vif_multiqueue_enabled: "false"
+
+  - name: image_mq
+    url: http://file.tlv.redhat.com/~vkhitrin/nfv_tuned_rhel76.qcow2
+    #url: file:///tmp/CentOS-7-x86_64-GenericCloud.qcow2
+    properties:
+      hw_vif_multiqueue_enabled: "true"
+
+# Flavor creation
+multiqueue_flavors:
+  - name: trex
+    ram: 8192
+    disk: 20
+    vcpus: 6
+    extra_specs:
+        "hw:mem_page_size": "1GB"
+        "hw:cpu_policy": "dedicated"
+        "hw:numa_nodes": "1"
+        "hw:numa_cpus.0": "0,1,2,3,4,5"
+        "hw:numa_mem.0": "8192"
+        "aggregate_instance_extra_specs:flavor": "trex"
+
+  - name: dut
+    ram: 8192
+    disk: 20
+    vcpus: 4
+    extra_specs:
+        "hw:mem_page_size": "1GB"
+        "hw:cpu_policy": "dedicated"
+        "hw:numa_nodes": "1"
+        "hw:numa_cpus.0": "0,1,2,3"
+        "hw:numa_mem.0": "8192"
+        "aggregate_instance_extra_specs:flavor": "dut"
+
+# Keypair creation for the ssh keyless access
+keypair_name: test_keypair
+resources_output_file: /home/stack/resources_output_file.yml
+dut_group: dpdk_dut
+dut_type: dpdk
+
+# Allow ICPM and SSH access to instances
+security_groups:
+  - name: test_secgroup
+    rules:
+      - protocol: icmp
+        port_range_min: -1
+        port_range_max: -1
+        remote_ip_prefix: 0.0.0.0/0
+      - protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+        remote_ip_prefix: 0.0.0.0/0
+
+#connection_user: centos
+connection_user: cloud-user
+
+# Instances creation
+multiqueue_instances:
+  - name: trex
+    groups: trex
+    flavor:  trex
+    image: image_no_mq
+    config_drive: true
+    key_name: "{{ keypair_name }}"
+    sec_groups: test_secgroup
+    floating_ip:
+      ext_net: datacentre
+      int_net: mgmt_vxlan
+    net_ports:
+      - name: sriov_net_nic0_308_trex_direct-physical_port-0
+        network: sriov_net_nic0_308
+        port_security: false
+        type: direct-physical
+      - name: sriov_net_nic1_309_trex_direct-physical_port-1
+        network: sriov_net_nic1_309
+        port_security: false
+        type: direct-physical
+    nics: net-name=mgmt_vxlan,port-name=sriov_net_nic0_308_trex_direct-physical_port-0,port-name=sriov_net_nic1_309_trex_direct-physical_port-1
+
+  - name: testpmd-dpdk-dut
+    groups: dpdk_dut
+    flavor: dut
+    image: image_no_mq
+    config_drive: true
+    key_name: "{{ keypair_name }}"
+    sec_groups: test_secgroup
+    floating_ip:
+      ext_net: datacentre
+      int_net: mgmt_dpdk1
+    net_ports:
+      - name: testpmd_net_nic0_308_dpdk_dut_port-0
+        network: testpmd_net_nic0_308
+        port_security: false
+        type: normal
+      - name: testpmd_net_nic1_309_dpdk_dut_port-1
+        network: testpmd_net_nic1_309
+        port_security: false
+        type: normal
+    nics: net-name=mgmt_dpdk1,port-name=testpmd_net_nic0_308_dpdk_dut_port-0,port-name=testpmd_net_nic1_309_dpdk_dut_port-1
+hugepages_count: 2
+
+# Default emulatorpin parameters
+cpu_list: '0,12'
+
+# EMC insertion probability
+emc_insert_inv_prob: 100
